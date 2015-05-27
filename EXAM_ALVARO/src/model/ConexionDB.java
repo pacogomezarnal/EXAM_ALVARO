@@ -1,83 +1,97 @@
 package model;
-import java.sql.DriverManager;
+
 import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-
-
+import java.sql.Statement;
 
 public class ConexionDB {
-	// DATOS DE LA CONEXION
-	static final String CONTROLADOR_MYSQL= "com.mysql.jdbc.Driver";
+	private static Connection con;
 	
-	//DATOS POR DEFECTO
-	private static final String HOST="localhost";
-	private static final String BBDD="thelaby";
-	private static final String USER="root";
-	private static final String PASS="";
+	/*Configuraci√≥n MYSQL*/
+	private String server="127.0.0.1";
+	private String bbdd="thelaby";
+	private String user="root";
+	private String password="";
 	
-	//DATOS DE LA BBDD
-	private String host;
-	private String bbdd;
-	private String user;
-	private String pass;
-	private String url;
+	private static ConexionDB instance=null;
 	
-	//Conexion
-	private static Connection conexion = null;// maneja la conexiÛ
-	
-	//Instancia unica
-	private static ConexionDB instance = null;
-	
-	private ConexionDB(String HOST,String BBDD,String USER,String PASS) {
-		this.host=HOST;
-		this.bbdd=BBDD;
-		this.user=USER;
-		this.pass=PASS;
-		this.url="jdbc:mysql://"+this.host+"/"+this.bbdd;
+	ConexionDB(){
+		
+		/* Genera una nueva instancia del driver de conexi√≥n MySQL */
+		try {
+			Class.forName("com.mysql.jdbc.Driver").newInstance();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		/* Intenta conectar y guardar esa conexi√≥n a la base de datos */
+		
+		try {
+			con = DriverManager.getConnection("jdbc:mysql://"+server+"/"+bbdd+"?"+"user="+user+"&password="+password);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	//Implementar SingleTon
-	public static ConexionDB getInstance(String HOST,String BBDD,String USER,String PASS) {
-	      if(instance == null) {
-	         instance = new ConexionDB(BBDD,HOST,USER,PASS);
-	      }
-	      return instance;
-	   }
-	//Este mÈtodo es el mismo que el anterior pero no es necesario
-	//pasar par·metros de base de datos ya que toma los
-	//valores por defecto
+	
+	/* LLamada a generaci√≥n o recogida de la instancia de la conexi√≥n */
+	
 	public static ConexionDB getInstance() {
-	      if(instance == null) {
-	         instance = new ConexionDB(ConexionDB.BBDD,ConexionDB.HOST,ConexionDB.USER,ConexionDB.PASS);;
-	      }
-	      return instance;
-	  }
+		if(instance==null) {
+			instance=new ConexionDB();
+		}
+		return instance;
+	}
+		
+
+	//Con este metodo hago los selects
+	public ResultSet query(String query){
+		
+		
+		Statement st;
+		ResultSet rs = null;
+
+		try {
+			st = con.createStatement();
+			try{
+				rs = st.executeQuery(query);
+			}catch (SQLException e){
+				e.printStackTrace();
+			}
+		
+		} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}	
+		return rs;	
+										
+	}
 	
-	//Metodo que permite la conexion a la base de datos
-	public boolean connectDB(){
+	public static Connection getConexion() {
+		return con;
+	}
+	
+	//Con este metodo vamos a hacer los inserts, update y deletes.
+	public int modifyQuery(String update){
+		Statement stmt;
+		int rs = 0;
 		try{
-			//Lo primero es cargar el controlador MySQL el cual autom·ticamente se registra
-			Class.forName(CONTROLADOR_MYSQL);
-			//Conectarnos a la BBDD
-			conexion = DriverManager.getConnection(this.url,this.user,this.pass);
+		stmt = con.createStatement();		
+			try{
+				rs = stmt.executeUpdate(update);
+			}catch (SQLException e){
+				
+			}
+		}catch(SQLException e){
+			e.printStackTrace();
 		}
-		catch( SQLException excepcionSql ) 
-		{
-			excepcionSql.printStackTrace();
-			return false;
-		}
-		catch( ClassNotFoundException noEncontroClase)
-		{
-			noEncontroClase.printStackTrace();
-			return false;
-		}
-		return true;
+		return rs;
 	}
-	
-	//Metodo que devuelve la conexion a la base de datos
-	public static Connection getConexion(){
-		return conexion;
-	}
+		
 
 }
-
